@@ -247,7 +247,7 @@ class EliotProfilerTest(unittest.TestCase):
 
 class CallGraphTest(unittest.TestCase):
     def test_call_graph(self):
-        instance = _CallGraphRoot('thread1', '12345',
+        instance = _CallGraphRoot(1, '12345',
                                   datetime.datetime(2016, 1, 21, 9, 0, 0))
         instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 1.0)
         instance.ingest(['main', 'doIt', '_innerDoSomethingElse'], 1.0, 2.0)
@@ -296,7 +296,7 @@ class CallGraphTest(unittest.TestCase):
                     }]
                 }]
             }],
-            "thread": "thread1"
+            "thread": 1
         }, jsonized)
 
 

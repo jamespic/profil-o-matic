@@ -13,6 +13,11 @@ from SocketServer import ThreadingMixIn
 import sys
 import time
 
+import pyximport
+pyximport.install()
+from eliot_profiler.call_graph import _CallGraphRoot
+from eliot_profiler.stack_trace import generate_stack_trace
+
 
 def ping(environ, start_response):
     with startAction(action_type='ping') as action:
@@ -65,7 +70,7 @@ if __name__ == '__main__':
         worker_threads.append(worker)
 
     profiler_thread_id = eliot_profiler._instance.thread.ident
-    profiler_callgraph = eliot_profiler._CallGraphRoot(
+    profiler_callgraph = _CallGraphRoot(
         profiler_thread_id,
         'profile',
         datetime.datetime.now() - datetime.timedelta(seconds=monotonic()))
@@ -75,7 +80,7 @@ if __name__ == '__main__':
         while True:
             time.sleep(0.01)
             frame = sys._current_frames()[profiler_thread_id]
-            stack = eliot_profiler._instance._generate_stack_trace(frame)
+            stack = generate_stack_trace(frame, 'line', False)
             after = monotonic()
             profiler_callgraph.ingest(stack, after - before, after)
             before = after
@@ -94,5 +99,5 @@ if __name__ == '__main__':
     with open('profiler_callgraph.json', 'w') as f:
         f.write(json.dumps(profiler_callgraph.jsonize(), indent=2))
 
-    print "Samples: {i.total_samples}, Overhead: {i.total_overhead}, Profiled: {i.profile_tasks}, Unprofiled: {i.unprofiled_tasks}".format(
-        i=eliot_profiler._instance)
+    print("Samples: {i.total_samples}, Overhead: {i.total_overhead}, Profiled: {i.profiled_tasks}, Unprofiled: {i.unprofiled_tasks}".format(
+        i=eliot_profiler._instance))

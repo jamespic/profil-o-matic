@@ -4,7 +4,12 @@ import sys
 import threading
 import time
 import traceback
-from collections import deque
+from collections import deque, OrderedDict
+
+import pyximport
+pyximport.install()
+from .call_graph import _CallGraphRoot, _CallGraphNode, _MessageNode
+from .stack_trace import generate_stack_trace
 
 import eliot
 from eliot._action import \
@@ -34,110 +39,6 @@ class _MessageInfo(object):
         self.thread = threading.currentThread().ident
         self.clock = datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
         self.monotonic = monotonic()
-
-
-class _CallGraphRoot(object):
-    __slots__ = [
-        'thread', 'task_uuid', 'wallclock_minus_monotonic', 'children'
-    ]
-
-    def __init__(self, thread, task_uuid, wallclock_minus_monotonic):
-        self.thread = thread
-        self.task_uuid = task_uuid
-        self.wallclock_minus_monotonic = wallclock_minus_monotonic
-        self.children = []
-
-    def ingest(self, call_stack, time, monotime, message=None):
-        children = self.children
-        for instruction_pointer in call_stack:
-            for child in children:
-                if child.instruction_pointer == instruction_pointer:
-                    node = child
-                    node.time += time
-                    if monotime < node.min_monotonic:
-                        node.min_monotonic = monotime
-                    if monotime > node.max_monotonic:
-                        node.max_monotonic = monotime
-                    break
-            else:
-                node = _CallGraphNode(instruction_pointer, time, 0.0, monotime,
-                                      monotime, None)
-                children.append(node)
-            children = node.current_children
-        # Do extra steps that only apply to leaf node
-        node.self_time += time
-        if message:
-            children.append(_MessageNode(monotime, message))
-            node.archived_children.extend(node.current_children)
-            node.current_children = []
-
-    def jsonize(self):
-        return {
-            'thread': self.thread,
-            'task_uuid': self.task_uuid,
-            'children': [
-                node.jsonize(self.wallclock_minus_monotonic)
-                for node in self.children
-            ]
-        }
-
-
-class _CallGraphNode(object):
-    __slots__ = [
-        'instruction_pointer', 'time', 'self_time', 'message', 'min_monotonic',
-        'max_monotonic', 'archived_children', 'current_children'
-    ]
-
-    def __init__(self,
-                 instruction_pointer,
-                 time=0.0,
-                 self_time=0.0,
-                 min_monotonic=None,
-                 max_monotonic=None,
-                 message=None):
-        self.instruction_pointer = instruction_pointer
-        self.time = time
-        self.self_time = self_time
-        self.message = message
-        self.min_monotonic = min_monotonic
-        self.max_monotonic = max_monotonic
-        self.archived_children = []
-        self.current_children = []
-
-    def jsonize(self, wall_clock_minus_monotonic):
-        msg = {
-            'instruction': self.instruction_pointer,
-            'time': self.time,
-            'self_time': self.self_time,
-            'start_time': (wall_clock_minus_monotonic + datetime.timedelta(
-                seconds=self.min_monotonic)).isoformat(),
-            'end_time': (wall_clock_minus_monotonic + datetime.timedelta(
-                seconds=self.max_monotonic)).isoformat()
-        }
-        if self.archived_children or self.current_children:
-            msg['children'] = [
-                node.jsonize(wall_clock_minus_monotonic)
-                for node in self.archived_children + self.current_children
-            ]
-        return msg
-
-
-class _MessageNode(object):
-    __slots__ = ['monotime', 'message']
-
-    def __init__(self, monotime, message):
-        self.monotime = monotime
-        self.message = message
-
-    def jsonize(self, wall_clock_minus_monotonic):
-        return {
-            'message_time': (wall_clock_minus_monotonic + datetime.timedelta(
-                seconds=self.monotime)).isoformat(),
-            'message': self.message
-        }
-
-
-_eliot_package_re = re.compile(r'^eliot(?:_profiler)?(?:\.|$)')
 
 
 class _Profiler(object):
@@ -226,7 +127,7 @@ class _Profiler(object):
             if not task:
                 continue
             call_graph = self.call_graphs[(thread, task)]
-            call_stack = self._generate_stack_trace(frame, False)
+            call_stack = generate_stack_trace(frame, self.code_granularity, False)
             call_graph.ingest(call_stack, time_to_record, monotime)
         self.actions_since_last_run = 0
 
@@ -276,7 +177,7 @@ class _Profiler(object):
                 task,
                 message.clock - datetime.timedelta(seconds=message.monotonic))
             self.call_graphs[(thread, task)] = call_graph
-        call_stack = self._generate_stack_trace(message.frame, True)
+        call_stack = generate_stack_trace(message.frame, self.code_granularity, True)
         call_graph.ingest(call_stack, 0.0, message.monotonic, message.message)
         next_task_uuid = message.next_task_uuid
         if next_task_uuid is None:
@@ -285,29 +186,6 @@ class _Profiler(object):
             del self.call_graphs[(thread, task)]
         else:
             self.thread_tasks[message.thread] = next_task_uuid
-
-    def _generate_stack_trace(self, frame, strip_eliot_frames=False):
-        result = []
-        while frame is not None:
-            if self.code_granularity == 'line':
-                instruction = (
-                    "{f.f_code.co_filename}:{f.f_code.co_name}:{f.f_lineno}"
-                    .format(f=frame))
-            elif self.code_granularity == 'method':
-                instruction = ("{f.f_code.co_filename}:{f.f_code.co_name}"
-                               .format(f=frame))
-            else:
-                instruction = frame.f_code.co_filename
-            if strip_eliot_frames:
-                if not _eliot_package_re.search(frame.f_globals['__name__']):
-                    # Stop stripping at first non-eliot frame
-                    result.append(instruction)
-                    strip_eliot_frames = False
-            else:
-                result.append(instruction)
-            frame = frame.f_back
-        result.reverse()
-        return result
 
     def _emit(self, message):
         jsonized = message.jsonize()
