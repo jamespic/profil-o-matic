@@ -13,10 +13,13 @@ from SocketServer import ThreadingMixIn
 import sys
 import time
 
-import pyximport
-pyximport.install()
-from eliot_profiler._call_graph import _CallGraphRoot
-from eliot_profiler._stack_trace import generate_stack_trace
+try:
+    from eliot_profiler._call_graph import CallGraphRoot
+    from eliot_profiler._stack_trace import generate_stack_trace
+except ImportError:
+    from eliot_profiler.call_graph import CallGraphRoot
+    from eliot_profiler.stack_trace import generate_stack_trace
+
 
 
 def ping(environ, start_response):
@@ -70,7 +73,7 @@ if __name__ == '__main__':
         worker_threads.append(worker)
 
     profiler_thread_id = eliot_profiler._instance.thread.ident
-    profiler_callgraph = _CallGraphRoot(
+    profiler_callgraph = CallGraphRoot(
         profiler_thread_id,
         'profile',
         datetime.datetime.now() - datetime.timedelta(seconds=monotonic()))

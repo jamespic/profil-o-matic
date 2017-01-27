@@ -50,6 +50,8 @@ setup(
     ],
     setup_requires=[
         #'cython',
+    ],
+    tests_require=[
         'mock',
         'six'
     ],
