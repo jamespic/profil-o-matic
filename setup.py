@@ -5,6 +5,7 @@ from setuptools.command.sdist import sdist as _sdist
 from platform import python_implementation
 import unittest
 
+
 extensions = None
 
 if python_implementation() == 'CPython':
@@ -47,7 +48,7 @@ setup(
         'pytz'
     ],
     setup_requires=[
-        'cython',
+        #'cython',
         'mock',
         'six'
     ],

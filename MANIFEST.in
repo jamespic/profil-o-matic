@@ -1,1 +1,8 @@
 recursive-include eliot_profiler *.pyx
+
+# added by check_manifest.py
+include *.md
+include *.py
+include LICENSE
+include tox.ini
+recursive-include tests *.py
