@@ -1,21 +1,13 @@
 import datetime
 
 
-cdef class _CallGraphNode(object):
-    cdef str instruction_pointer
-    cdef double time
-    cdef double self_time
-    cdef double min_monotonic
-    cdef double max_monotonic
-    cdef list archived_children
-    cdef list current_children
-
+class _CallGraphNode(object):
     def __init__(self,
-                 str instruction_pointer,
-                 double time,
-                 double self_time,
-                 double min_monotonic,
-                 double max_monotonic):
+                 instruction_pointer,
+                 time,
+                 self_time,
+                 min_monotonic,
+                 max_monotonic):
         self.instruction_pointer = instruction_pointer
         self.time = time
         self.self_time = self_time
@@ -42,15 +34,12 @@ cdef class _CallGraphNode(object):
         return msg
 
 
-cdef class _MessageNode(object):
-    cdef double monotime
-    cdef object message
-
-    def __init__(self, double monotime, object message):
+class _MessageNode(object):
+    def __init__(self, monotime, message):
         self.monotime = monotime
         self.message = message
 
-    cpdef dict jsonize(self, wall_clock_minus_monotonic):
+    def jsonize(self, wall_clock_minus_monotonic):
         return {
             'message_time': (wall_clock_minus_monotonic + datetime.timedelta(
                 seconds=self.monotime)).isoformat(),
@@ -58,22 +47,14 @@ cdef class _MessageNode(object):
         }
 
 
-cdef class _CallGraphRoot(object):
-    cdef long thread
-    cdef basestring task_uuid
-    cdef object wallclock_minus_monotonic
-    cdef list children
-
-    def __init__(self, long thread, basestring task_uuid, wallclock_minus_monotonic):
+class CallGraphRoot(object):
+    def __init__(self, thread, task_uuid, wallclock_minus_monotonic):
         self.thread = thread
         self.task_uuid = task_uuid
         self.wallclock_minus_monotonic = wallclock_minus_monotonic
         self.children = []
 
-    def ingest(self, list call_stack, double time, double monotime, message=None):
-        cdef _CallGraphNode child
-        cdef str instruction_pointer
-        cdef _CallGraphNode node
+    def ingest(self, call_stack, time, monotime, message=None):
         children = self.children
         for instruction_pointer in call_stack:
             for child in children:

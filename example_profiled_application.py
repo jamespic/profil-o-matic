@@ -15,8 +15,8 @@ import time
 
 import pyximport
 pyximport.install()
-from eliot_profiler.call_graph import _CallGraphRoot
-from eliot_profiler.stack_trace import generate_stack_trace
+from eliot_profiler._call_graph import _CallGraphRoot
+from eliot_profiler._stack_trace import generate_stack_trace
 
 
 def ping(environ, start_response):

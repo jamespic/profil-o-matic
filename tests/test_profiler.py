@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 import unittest
-import collections
+from mock import patch
 import datetime
-import json
-from eliot_profiler import _Profiler, _CallGraphRoot, _MessageInfo
+import collections
+from eliot_profiler.profiler import Profiler, _MessageInfo
+from eliot_profiler.stack_trace import generate_stack_trace
 
 
 def drain_queue(q):
@@ -20,14 +21,6 @@ MockFrame = collections.namedtuple('MockFrame',
 MockCode = collections.namedtuple('MockCode', 'co_filename co_name')
 
 
-class MockedOutProfiler(_Profiler):
-    def _current_frames(self):
-        return {
-            12345: mock_frame('__main__:main:1', 'business.app:__init__:5',
-                              'business.backend:doStuff:10')
-        }
-
-
 def mock_frame(*frames):
     result = None
     for frame in frames:
@@ -39,9 +32,16 @@ def mock_frame(*frames):
     return result
 
 
+def mock_current_frames():
+    return {
+        12345: mock_frame('__main__:main:1', 'business.app:__init__:5',
+                          'business.backend:doStuff:10')
+    }
+
+
 class EliotProfilerTest(unittest.TestCase):
     def test_max_actions_per_run(self):
-        instance = _Profiler(max_actions_per_run=2)
+        instance = Profiler(max_actions_per_run=2)
         instance.handle_message({'task_uuid': '1', 'action_status': 'started'})
         instance.handle_message({
             'task_uuid': '1',
@@ -69,7 +69,7 @@ class EliotProfilerTest(unittest.TestCase):
         self.assertEqual(None, messages[5].next_task_uuid)
 
     def test_dont_handle_message_outside_action(self):
-        instance = _Profiler(store_all_logs=True)
+        instance = Profiler(store_all_logs=True)
         instance.handle_message({'task_uuid': '99', 'msg': 'outside'})
         instance.handle_message({'task_uuid': '1', 'action_status': 'started'})
         instance.handle_message({'task_uuid': '1', 'msg': 'inside'})
@@ -81,7 +81,7 @@ class EliotProfilerTest(unittest.TestCase):
         self.assertEqual('failed', messages[2].message['action_status'])
 
     def test_dont_store_all_logs(self):
-        instance = _Profiler(store_all_logs=False)
+        instance = Profiler(store_all_logs=False)
         instance.handle_message({'task_uuid': '1', 'action_status': 'started'})
         instance.handle_message({'task_uuid': '1', 'msg': 'inside'})
         instance.handle_message({'task_uuid': '1', 'action_status': 'failed'})
@@ -90,8 +90,10 @@ class EliotProfilerTest(unittest.TestCase):
         self.assertEqual('started', messages[0].message['action_status'])
         self.assertEqual('failed', messages[1].message['action_status'])
 
+    @patch('eliot_profiler.profiler.generate_stack_trace', generate_stack_trace
+           )  # Use pure Python one, to allow use of mock stack frames
     def test_ingest_message(self):
-        instance = _Profiler()
+        instance = Profiler()
         messages = []
         instance.add_destination(messages.append)
 
@@ -161,10 +163,13 @@ class EliotProfilerTest(unittest.TestCase):
             "thread": 12345
         }], messages)
 
+    @patch('sys._current_frames', mock_current_frames)
+    @patch('eliot_profiler.profiler.generate_stack_trace', generate_stack_trace
+           )  # Use pure Python one, to allow use of mock stack frames
     def test_profiling_cycle(self):
         # import pudb
         # pu.db
-        instance = MockedOutProfiler()
+        instance = Profiler()
         messages = []
         instance.add_destination(messages.append)
 
@@ -243,62 +248,3 @@ class EliotProfilerTest(unittest.TestCase):
             }],
             "thread": 12345
         }], messages)
-
-
-class CallGraphTest(unittest.TestCase):
-    def test_call_graph(self):
-        instance = _CallGraphRoot(1, '12345',
-                                  datetime.datetime(2016, 1, 21, 9, 0, 0))
-        instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 1.0)
-        instance.ingest(['main', 'doIt', '_innerDoSomethingElse'], 1.0, 2.0)
-        instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 3.0)
-        instance.ingest(['main', 'doIt'], 1.0, 4.0)
-        instance.ingest(['main', 'doIt'], 0.0, 4.5, {'event': 'something'})
-        instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 5.0)
-        jsonized = instance.jsonize()
-        self.assertEqual({
-            "task_uuid": "12345",
-            "children": [{
-                "start_time": "2016-01-21T09:00:01",
-                "instruction": "main",
-                "self_time": 0,
-                "end_time": "2016-01-21T09:00:05",
-                "time": 5.0,
-                "children": [{
-                    "start_time": "2016-01-21T09:00:01",
-                    "instruction": "doIt",
-                    "self_time": 1.0,
-                    "end_time": "2016-01-21T09:00:05",
-                    "time": 5.0,
-                    "children": [{
-                        "self_time": 2.0,
-                        "start_time": "2016-01-21T09:00:01",
-                        "instruction": "_innerDoIt",
-                        "end_time": "2016-01-21T09:00:03",
-                        "time": 2.0
-                    }, {
-                        "self_time": 1.0,
-                        "start_time": "2016-01-21T09:00:02",
-                        "instruction": "_innerDoSomethingElse",
-                        "end_time": "2016-01-21T09:00:02",
-                        "time": 1.0
-                    }, {
-                        "message": {
-                            "event": "something"
-                        },
-                        "message_time": "2016-01-21T09:00:04.500000"
-                    }, {
-                        "self_time": 1.0,
-                        "start_time": "2016-01-21T09:00:05",
-                        "instruction": "_innerDoIt",
-                        "end_time": "2016-01-21T09:00:05",
-                        "time": 1.0
-                    }]
-                }]
-            }],
-            "thread": 1
-        }, jsonized)
-
-
-if __name__ == '__main__':
-    unittest.main()
