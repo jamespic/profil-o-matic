@@ -13,15 +13,16 @@ except ImportError:
     from .stack_trace import generate_stack_trace
 
 import eliot
-from eliot._action import \
-    ACTION_STATUS_FIELD, \
-    STARTED_STATUS, \
-    SUCCEEDED_STATUS, \
-    FAILED_STATUS, \
-    TASK_UUID_FIELD
 
 from monotonic import monotonic
 import pytz
+
+ACTION_STATUS_FIELD = 'action_status'
+TASK_UUID_FIELD = 'task_uuid'
+
+STARTED_STATUS = 'started'
+SUCCEEDED_STATUS = 'succeeded'
+FAILED_STATUS = 'failed'
 
 _PROFILER_DEFAULTS = {
     'max_actions_per_run': 10,
