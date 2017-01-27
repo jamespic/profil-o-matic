@@ -1,4 +1,4 @@
-recursive-include eliot_profiler *.pyx
+recursive-include src/eliot_profiler *.pyx
 
 # added by check_manifest.py
 include *.md

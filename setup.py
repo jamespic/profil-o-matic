@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from setuptools.command.sdist import sdist as _sdist
 from platform import python_implementation
 import unittest
@@ -11,16 +11,16 @@ extensions = None
 if python_implementation() == 'CPython':
     try:
         from Cython.Build import cythonize
-        extensions = cythonize('eliot_profiler/**.pyx')
+        extensions = cythonize('src/eliot_profiler/**.pyx')
     except ImportError:
         extensions = [
             Extension(
                 'eliot_profiler._call_graph',
-                ['eliot_profiler/_call_graph.c']
+                ['src/eliot_profiler/_call_graph.c']
             ),
             Extension(
                 'eliot_profiler._stack_trace',
-                ['eliot_profiler/_stack_trace.c']
+                ['src/eliot_profiler/_stack_trace.c']
             ),
         ]
 
@@ -28,7 +28,7 @@ if python_implementation() == 'CPython':
 class sdist(_sdist):
     def run(self):
         from Cython.Build import cythonize
-        cythonize(['eliot_profiler/**.pyx'])
+        cythonize(['src/eliot_profiler/**.pyx'])
         _sdist.run(self)
 
 
@@ -39,7 +39,8 @@ setup(
     author='James Pickering',
     author_email='james_pic@hotmail.com',
     url='https://github.com/jamespic/eliot-profiler',
-    packages=['eliot_profiler'],
+    packages=find_packages('src'),
+    package_dir={'':'src'},
     ext_modules=extensions,
     cmdclass={'sdist': sdist},
     install_requires=[
