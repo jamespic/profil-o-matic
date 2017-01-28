@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function
 import eliot_profiler
+import eliot_profiler.monkey_patch
 import eliot
 import datetime
 import json
@@ -55,12 +56,13 @@ def app(environ, start_response):
 
 
 class ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
-    pass
+    daemon_threads = True
 
 
 eliot_profiler.configure(max_overhead=1.0, code_granularity='line')
 eliot_profiler.add_destination(FileDestination(open('profile.log', 'w')))
 eliot.add_destination(FileDestination(open('app.log', 'w')))
+eliot_profiler.monkey_patch.patch()
 
 if __name__ == '__main__':
     server = make_server('', 8090, app, server_class=ThreadingWSGIServer)

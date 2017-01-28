@@ -14,11 +14,19 @@ except ImportError:
 
 import eliot
 
-from monotonic import monotonic
+try:
+    from fast_monotonic import monotonic
+    monotonic()  # Check it actually works
+except (ImportError, OSError):
+    from monotonic import monotonic
 import pytz
 
 ACTION_STATUS_FIELD = 'action_status'
+ACTION_TYPE_FIELD = 'action_type'
 TASK_UUID_FIELD = 'task_uuid'
+TASK_LEVEL_FIELD = 'task_level'
+
+REMOTE_TASK_ACTION = 'eliot_profiler:linked_remote_task'
 
 STARTED_STATUS = 'started'
 SUCCEEDED_STATUS = 'succeeded'
@@ -124,9 +132,9 @@ class Profiler(object):
             pass
 
     def _profile_stacks(self, time_to_record, monotime):
-        for thread, frame in self._current_frames().items():
+        for thread, frame in sys._current_frames().items():
             task = self.thread_tasks.get(thread)
-            if not task:
+            if task is None:
                 continue
             call_graph = self.call_graphs[(thread, task)]
             call_stack = generate_stack_trace(frame, self.code_granularity, False)
@@ -165,9 +173,6 @@ class Profiler(object):
             target=self._profiler_loop, name='Eliot Profiler Thread')
         self.thread.setDaemon(True)
         self.thread.start()
-
-    def _current_frames(self):
-        return sys._current_frames()
 
     def _ingest_message(self, message):
         thread = message.thread

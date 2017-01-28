@@ -2,16 +2,22 @@
 
 from setuptools import setup, Extension, find_packages
 from setuptools.command.sdist import sdist as _sdist
-from platform import python_implementation
+from platform import python_implementation, platform, system
 import unittest
 
 
 extensions = None
 
 if python_implementation() == 'CPython':
+    supports_fast_monotonic = system() == 'Linux'
     try:
         from Cython.Build import cythonize
-        extensions = cythonize('src/eliot_profiler/**.pyx')
+        extensions = cythonize([
+            'src/eliot_profiler/_call_graph.pyx',
+            'src/eliot_profiler/_stack_trace.pyx'
+        ])
+        if supports_fast_monotonic:
+            extensions.extend(cythonize('src/eliot_profiler/fast_monotonic.pyx'))
     except ImportError:
         extensions = [
             Extension(
@@ -21,8 +27,13 @@ if python_implementation() == 'CPython':
             Extension(
                 'eliot_profiler._stack_trace',
                 ['src/eliot_profiler/_stack_trace.c']
-            ),
+            )
         ]
+        if supports_fast_monotonic:
+            extensions.append(Extension(
+                'eliot_profiler.fast_monotonic',
+                ['src/eliot_profiler/fast_monotonic.c']
+            ))
 
 
 class sdist(_sdist):
@@ -49,7 +60,7 @@ setup(
         'pytz'
     ],
     setup_requires=[
-        #'cython',
+        'cython',
     ],
     tests_require=[
         'mock',

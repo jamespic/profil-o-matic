@@ -24,18 +24,18 @@ How it works
     eliot_profiler.configure(
         max_overhead=0.02,  # Autotune granularity to target a desired profiling overhead - 2% in this case
         time_granularity=0.01,  # Sampling frequency - 10ms in this case
-        code_granularity='line',  # Get file, method, or line-level performance data
+        code_granularity='method',  # Get file, method, or line-level performance data
         store_all_logs=False,  # Incorporate all log messages into call graph
         max_actions_per_run=10,  # When heavily loaded, limit how many new actions you profile per cycle
     )
 
     # Now run a program
-    import time
+    import urllib2
     import wsgiref.simple_server
     def app(environ, start_response):
         with eliot.startAction(event='app:hello-world'):
-            time.sleep(1.0)
-            start_response('200 OK', [('Content-Type', 'text/plain')])
-            return ["Hello World"]
+            data = urllib2.urlopen('http://www.python.org').read()
+            start_response('200 OK', [('Content-Type', 'text/html')])
+            return [data.replace('Python 3', 'Python 3000')]
 
     wsgiref.simple_server.make_server('', 8000, app).serve_forever()

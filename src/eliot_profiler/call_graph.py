@@ -55,6 +55,7 @@ class CallGraphRoot(object):
         self.children = []
 
     def ingest(self, call_stack, time, monotime, message=None):
+        node = None
         children = self.children
         for instruction_pointer in call_stack:
             for child in children:
@@ -71,11 +72,12 @@ class CallGraphRoot(object):
                 children.append(node)
             children = node.current_children
         # Do extra steps that only apply to leaf node
-        node.self_time += time
-        if message:
-            node.archived_children.extend(node.current_children)
-            node.archived_children.append(_MessageNode(monotime, message))
-            node.current_children = []
+        if node:
+            node.self_time += time
+            if message:
+                node.archived_children.extend(node.current_children)
+                node.archived_children.append(_MessageNode(monotime, message))
+                node.current_children = []
 
     def jsonize(self):
         return {
