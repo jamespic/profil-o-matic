@@ -7,10 +7,16 @@ import json
 from monotonic import monotonic
 from eliot import startAction, Action, FileDestination
 from threading import Thread
-from urllib2 import urlopen, Request
+try:
+    from urllib2 import urlopen, Request
+except ImportError:
+    from urllib.request import urlopen, Request
 from wsgiref.simple_server import make_server, WSGIServer
 from wsgiref.util import shift_path_info
-from SocketServer import ThreadingMixIn
+try:
+    from SocketServer import ThreadingMixIn
+except ImportError:
+    from socketserver import ThreadingMixIn
 import sys
 import time
 
@@ -28,20 +34,20 @@ def ping(environ, start_response):
         for i in range(200):
             req = Request(
                 'http://localhost:8090/pong',
-                headers={'X-Eliot-Context': action.serialize_task_id()})
+                headers={'X-Eliot-Context': action.serialize_task_id().decode('ascii')})
             response = urlopen(req)
             response.read()
             response.close()
         start_response('200 OK', [('Content-Type', 'text/plain')])
-        return ['OK']
+        return [b'OK']
 
 
 def pong(environ, start_response):
     with Action.continueTask(
-            task_id=environ['HTTP_X_ELIOT_CONTEXT']) as action:
+            task_id=environ['HTTP_X_ELIOT_CONTEXT'].encode('ascii')) as action:
         time.sleep(0.3)
         start_response('200 OK', [('Content-Type', 'text/plain')])
-        return ['OK']
+        return [b'OK']
 
 
 def app(environ, start_response):
@@ -69,7 +75,7 @@ if __name__ == '__main__':
     server_thread = Thread(target=server.serve_forever, args=[0.1])
     server_thread.start()
     worker_threads = []
-    for i in xrange(10):
+    for i in range(10):
         worker = Thread(target=urlopen, args=['http://localhost:8090/ping'])
         worker.start()
         worker_threads.append(worker)
