@@ -5,6 +5,7 @@ class BaseCallGraphTest(object):
     def test_call_graph(self):
         instance = self.call_graph_class(
             1, '12345', datetime.datetime(2016, 1, 21, 9, 0, 0))
+        instance.ingest([], 0.0, 0.0)
         instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 1.0)
         instance.ingest(['main', 'doIt', '_innerDoSomethingElse'], 1.0, 2.0)
         instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 3.0)
