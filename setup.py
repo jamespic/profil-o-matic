@@ -49,6 +49,7 @@ setup(
     description='A hybrid profiler / mini APM tool, that links in with Eliot',
     author='James Pickering',
     author_email='james_pic@hotmail.com',
+    license='MIT',
     url='https://github.com/jamespic/eliot-profiler',
     packages=find_packages('src'),
     package_dir={'':'src'},
