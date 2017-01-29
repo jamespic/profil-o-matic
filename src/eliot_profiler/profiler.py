@@ -1,4 +1,5 @@
 import datetime
+import six
 import sys
 import threading
 import time
@@ -33,9 +34,9 @@ SUCCEEDED_STATUS = 'succeeded'
 FAILED_STATUS = 'failed'
 
 _PROFILER_DEFAULTS = {
-    'max_actions_per_run': 10,
+    'simultaneous_tasks_profiled': 10,
     'max_overhead': 0.02,  # fraction
-    'time_granularity': 0.01,  # seconds
+    'time_granularity': 0.1,  # seconds
     'code_granularity': 'method',  # line, method, or file
     'store_all_logs': False
 }
@@ -52,9 +53,17 @@ class _MessageInfo(object):
 
 
 class Profiler(object):
+    __slots__ = [
+        'simultaneous_tasks_profiled', 'max_overhead', 'time_granularity',
+        'code_granularity', 'store_all_logs', 'actions_since_last_run',
+        'actions_next_run', 'message_queue', 'action_context',
+        'destinations', 'thread_tasks', 'call_graphs', 'thread',
+        'total_overhead', 'granularity_sum', 'total_samples', 'profiled_tasks',
+        'unprofiled_tasks']
     def __init__(self, **kwargs):
         self.configure(**kwargs)
         self.actions_since_last_run = 0
+        self.actions_next_run = self.simultaneous_tasks_profiled
         self.message_queue = deque()
         self.action_context = threading.local()
         self.destinations = []
@@ -62,6 +71,7 @@ class Profiler(object):
         self.call_graphs = {}
         self.thread = None
         self.total_overhead = 0.0
+        self.granularity_sum = 0.0
         self.total_samples = 0
         self.profiled_tasks = 0
         self.unprofiled_tasks = 0
@@ -94,7 +104,8 @@ class Profiler(object):
             context.stack = []
             # This is racy, but it's not a disaster
             # if a small number of extra actions are profiled
-            if self.actions_since_last_run < self.max_actions_per_run:
+            if (len(self.thread_tasks) + self.actions_since_last_run
+                    < self.actions_next_run):
                 self.actions_since_last_run += 1
                 context.logging = True
                 self.profiled_tasks += 1
@@ -132,13 +143,15 @@ class Profiler(object):
             pass
 
     def _profile_stacks(self, time_to_record, monotime):
-        for thread, frame in sys._current_frames().items():
-            task = self.thread_tasks.get(thread)
-            if task is None:
-                continue
-            call_graph = self.call_graphs[(thread, task)]
-            call_stack = generate_stack_trace(frame, self.code_granularity, False)
-            call_graph.ingest(call_stack, time_to_record, monotime)
+        frames = sys._current_frames()
+        for thread, task in six.iteritems(self.thread_tasks):
+            try:
+                frame = frames[thread]
+                call_graph = self.call_graphs[(thread, task)]
+                call_stack = generate_stack_trace(frame, self.code_granularity, False)
+                call_graph.ingest(call_stack, time_to_record, monotime)
+            except KeyError:
+                pass  # No frame, no biggie
         self.actions_since_last_run = 0
 
     def _profile_once(self, time_to_record, monotime):
@@ -159,10 +172,21 @@ class Profiler(object):
             self._profile_stacks(time_to_record, monotonic())
             end_time = monotonic()
             time_taken = end_time - start_time
-            wait_time = max(self.time_granularity, time_taken /
-                            self.max_overhead) - time_taken
+            # How did the time taken compare with the target
+            performance_against_target = (
+                time_taken / (self.time_granularity * self.max_overhead)
+            ) or 1.0
+            if performance_against_target <= 1:
+                # Performance was good, so maybe profile more actions
+                self.actions_next_run = self.simultaneous_tasks_profiled / performance_against_target
+                wait_time = self.time_granularity - time_taken
+            else:
+                # Performance wasn't so good, so wait longer, reducing granularity
+                self.actions_next_run = self.simultaneous_tasks_profiled
+                wait_time = time_taken / self.max_overhead - time_taken
             last_start_time = start_time
             self.total_overhead += time_taken
+            self.granularity_sum += time_to_record
             self.total_samples += 1
 
     def start(self):

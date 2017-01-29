@@ -57,14 +57,14 @@ setup(
     install_requires=[
         'eliot',
         'monotonic',
-        'pytz'
+        'pytz',
+        'six'
     ],
     setup_requires=[
         'cython',
     ],
     tests_require=[
-        'mock',
-        'six'
+        'mock'
     ],
     test_suite='tests'
 )

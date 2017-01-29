@@ -1,12 +1,14 @@
 from __future__ import absolute_import, print_function
 import eliot_profiler
 import eliot_profiler.monkey_patch
+import eliot_profiler.monitor
 import eliot
 import datetime
 import json
-from monotonic import monotonic
+from eliot_profiler.fast_monotonic import monotonic
 from eliot import startAction, Action, FileDestination
 from threading import Thread
+from prometheus_client.exposition import make_wsgi_app
 try:
     from urllib2 import urlopen, Request
 except ImportError:
@@ -31,7 +33,7 @@ except ImportError:
 
 def ping(environ, start_response):
     with startAction(action_type='ping') as action:
-        for i in range(200):
+        for i in range(1000):
             req = Request(
                 'http://localhost:8090/pong',
                 headers={'X-Eliot-Context': action.serialize_task_id().decode('ascii')})
@@ -45,7 +47,7 @@ def ping(environ, start_response):
 def pong(environ, start_response):
     with Action.continueTask(
             task_id=environ['HTTP_X_ELIOT_CONTEXT'].encode('ascii')) as action:
-        time.sleep(0.3)
+        time.sleep(0.2)
         start_response('200 OK', [('Content-Type', 'text/plain')])
         return [b'OK']
 
@@ -56,6 +58,8 @@ def app(environ, start_response):
         return ping(environ, start_response)
     elif path == 'pong':
         return pong(environ, start_response)
+    elif path == 'metrics':
+        return make_wsgi_app()(environ, start_response)
     else:
         start_response('404 Not Found', [])
         return 'Not Found'
@@ -64,11 +68,14 @@ def app(environ, start_response):
 class ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
     daemon_threads = True
 
-
-eliot_profiler.configure(max_overhead=1.0, code_granularity='line')
+def noop_dest(message):
+    return
+eliot_profiler.configure(max_overhead=0.05, code_granularity='line', simultaneous_tasks_profiled=15, time_granularity=0.2)
+# eliot_profiler.add_destination(noop_dest)
 eliot_profiler.add_destination(FileDestination(open('profile.log', 'w')))
 eliot.add_destination(FileDestination(open('app.log', 'w')))
 eliot_profiler.monkey_patch.patch()
+eliot_profiler.monitor.enable_prometheus()
 
 if __name__ == '__main__':
     server = make_server('', 8090, app, server_class=ThreadingWSGIServer)
@@ -110,5 +117,5 @@ if __name__ == '__main__':
     with open('profiler_callgraph.json', 'w') as f:
         f.write(json.dumps(profiler_callgraph.jsonize(), indent=2))
 
-    print("Samples: {i.total_samples}, Overhead: {i.total_overhead}, Profiled: {i.profiled_tasks}, Unprofiled: {i.unprofiled_tasks}".format(
-        i=eliot_profiler._instance))
+    import prometheus_client
+    print(prometheus_client.generate_latest())
