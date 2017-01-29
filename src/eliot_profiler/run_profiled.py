@@ -18,6 +18,9 @@ parser = argparse.ArgumentParser(
     description="A low-overhead sampling profiler for Python code, that takes advantage of Eliot to link actions to code"
 )
 parser.add_argument(
+    '-s', '--source-name',
+    help='The name of the data source - usually hostname or app name')
+parser.add_argument(
     '-o', '--output-file', type=argparse.FileType('w'),
     help='A file where profiler output should be sent')
 parser.add_argument(
@@ -25,14 +28,14 @@ parser.add_argument(
     help='Do not flush profiling data to file after writing - can reduce overhead, but risks data loss'
 )
 parser.add_argument(
-    '-s', '--output-socket', type=str,
+    '-i', '--output-socket', type=str,
     help='A TCP address where profiler output should be sent')
 parser.add_argument(
     '-n', '--tasks-profiled', type=int, default=10,
     help='The number of concurrent Eliot tasks that the profiler should aim to profile at once'
 )
 parser.add_argument(
-    '-p', '--max-overhead', type=percentage, default=0.02,
+    '-v', '--max-overhead', type=percentage, default=0.02,
     help='The most performance overhead the profiler is allowed to add, expressed as a fraction or percentage'
 )
 parser.add_argument(
@@ -48,7 +51,7 @@ parser.add_argument(
     help='Store all logs in profiler call graphs, not just action start and end messages'
 )
 parser.add_argument(
-    '-r', '--monkey-patch', action='store_true',
+    '-p', '--monkey-patch', action='store_true',
     help='Monkey patch eliot, to allow profiler to record remote task creation'
 )
 parser.add_argument(
@@ -71,6 +74,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 eliot_profiler.configure(
+    source_name=args.source_name,
     simultaneous_tasks_profiled=args.tasks_profiled,
     max_overhead=args.max_overhead,
     time_granularity=args.time_granularity,
@@ -102,7 +106,6 @@ if not (args.output_socket or args.output_file):
     eliot_profiler.add_destination(eliot.FileDestination(sys.stderr))
 
 sys.argv = [args.target] + args.target_args
-print 'Running', sys.argv
 if args.m:
     runpy.run_module(args.target, run_name='__main__')
 else:

@@ -42,7 +42,8 @@ _PROFILER_DEFAULTS = {
     'max_overhead': 0.02,  # fraction
     'time_granularity': 0.1,  # seconds
     'code_granularity': 'method',  # line, method, or file
-    'store_all_logs': False
+    'store_all_logs': False,
+    'source_name': None
 }
 
 
@@ -59,11 +60,11 @@ class _MessageInfo(object):
 class Profiler(object):
     __slots__ = [
         'simultaneous_tasks_profiled', 'max_overhead', 'time_granularity',
-        'code_granularity', 'store_all_logs', 'actions_since_last_run',
-        'actions_next_run', 'message_queue', 'action_context',
-        'destinations', 'thread_tasks', 'call_graphs', 'thread',
-        'total_overhead', 'granularity_sum', 'total_samples', 'profiled_tasks',
-        'unprofiled_tasks']
+        'code_granularity', 'source_name', 'store_all_logs',
+        'actions_since_last_run', 'actions_next_run', 'message_queue',
+        'action_context', 'destinations', 'thread_tasks', 'call_graphs',
+        'thread', 'total_overhead', 'granularity_sum', 'total_samples',
+        'profiled_tasks', 'unprofiled_tasks']
     def __init__(self, **kwargs):
         self.configure(**kwargs)
         self.actions_since_last_run = 0
@@ -225,6 +226,8 @@ class Profiler(object):
 
     def _emit(self, message):
         jsonized = message.jsonize()
+        if self.source_name:
+            jsonized['source'] = self.source_name
         for destination in self.destinations:
             try:
                 destination(jsonized)

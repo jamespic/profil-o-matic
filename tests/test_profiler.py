@@ -169,7 +169,7 @@ class EliotProfilerTest(unittest.TestCase):
     def test_profiling_cycle(self):
         # import pudb
         # pu.db
-        instance = Profiler()
+        instance = Profiler(source_name='test_source')
         messages = []
         instance.add_destination(messages.append)
 
@@ -210,6 +210,7 @@ class EliotProfilerTest(unittest.TestCase):
         instance._profile_once(0.1, 1.5)
 
         self.assertEqual([{
+            "source": "test_source",
             "task_uuid": "1",
             "children": [{
                 "start_time": "1988-01-01T09:00:00",
