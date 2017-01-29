@@ -1,15 +1,6 @@
 import os
 
-cdef extern from "<time.h>":
-    struct timespec:
-        long tv_sec
-        long tv_nsec
-
-    ctypedef int clockid_t
-
-    int clock_gettime(clockid_t clock_id, timespec* ts)
-
-    clockid_t CLOCK_MONOTONIC_COARSE
+from posix.time cimport timespec, clock_gettime, CLOCK_MONOTONIC_COARSE
 
 cpdef float monotonic():
     cdef timespec ts

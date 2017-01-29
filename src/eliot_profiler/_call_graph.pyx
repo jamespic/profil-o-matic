@@ -1,7 +1,12 @@
-import datetime
+cimport cpython.datetime as datetime
 
 
-cdef class _CallGraphNode(object):
+cdef class _Jsonizable(object):
+    cdef dict jsonize(self, datetime.datetime wall_clock_minus_monotonic):
+        pass
+
+
+cdef class _CallGraphNode(_Jsonizable):
     cdef str instruction_pointer
     cdef double time
     cdef double self_time
@@ -24,7 +29,8 @@ cdef class _CallGraphNode(object):
         self.archived_children = []
         self.current_children = []
 
-    def jsonize(self, wall_clock_minus_monotonic):
+    cdef dict jsonize(self, datetime.datetime wall_clock_minus_monotonic):
+        cdef _Jsonizable node
         msg = {
             'instruction': self.instruction_pointer,
             'time': self.time,
@@ -42,7 +48,7 @@ cdef class _CallGraphNode(object):
         return msg
 
 
-cdef class _MessageNode(object):
+cdef class _MessageNode(_Jsonizable):
     cdef double monotime
     cdef object message
 
@@ -50,7 +56,7 @@ cdef class _MessageNode(object):
         self.monotime = monotime
         self.message = message
 
-    cpdef dict jsonize(self, wall_clock_minus_monotonic):
+    cdef dict jsonize(self, datetime.datetime wall_clock_minus_monotonic):
         return {
             'message_time': (wall_clock_minus_monotonic + datetime.timedelta(
                 seconds=self.monotime)).isoformat(),
@@ -61,10 +67,10 @@ cdef class _MessageNode(object):
 cdef class CallGraphRoot(object):
     cdef long thread
     cdef basestring task_uuid
-    cdef object wallclock_minus_monotonic
+    cdef datetime.datetime wallclock_minus_monotonic
     cdef list children
 
-    def __init__(self, long thread, basestring task_uuid, wallclock_minus_monotonic):
+    def __init__(self, long thread, basestring task_uuid, datetime.datetime wallclock_minus_monotonic):
         self.thread = thread
         self.task_uuid = task_uuid
         self.wallclock_minus_monotonic = wallclock_minus_monotonic
@@ -97,7 +103,8 @@ cdef class CallGraphRoot(object):
                 node.archived_children.append(_MessageNode(monotime, message))
                 node.current_children = []
 
-    def jsonize(self):
+    cpdef jsonize(self):
+        cdef _Jsonizable node
         return {
             'thread': self.thread,
             'task_uuid': self.task_uuid,
