@@ -68,7 +68,7 @@ def app(environ, start_response):
 class ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
     daemon_threads = True
 
-eliot_profiler.configure(max_overhead=0.05, code_granularity='line', simultaneous_tasks_profiled=15, time_granularity=0.05)
+# eliot_profiler.configure(max_overhead=0.05, code_granularity='line', simultaneous_tasks_profiled=15, time_granularity=0.05)
 
 
 # import socket
@@ -76,40 +76,40 @@ eliot_profiler.configure(max_overhead=0.05, code_granularity='line', simultaneou
 # s.connect(('127.0.0.1', 54637))
 # eliot_profiler.add_destination(FileDestination(s.makefile()))
 
-eliot_profiler.add_destination(FileDestination(open('profile.log', 'wb')))
+# eliot_profiler.add_destination(FileDestination(open('profile.log', 'wb')))
 eliot.add_destination(FileDestination(open('app.log', 'w')))
-eliot_profiler.monkey_patch.patch()
-eliot_profiler.monitor.enable_prometheus()
+# eliot_profiler.monkey_patch.patch()
+# eliot_profiler.monitor.enable_prometheus()
 
 if __name__ == '__main__':
     server = make_server('', 8090, app, server_class=ThreadingWSGIServer)
     server_thread = Thread(target=server.serve_forever, args=[0.1])
     server_thread.start()
     worker_threads = []
-    for i in range(10):
+    for i in range(5):
         worker = Thread(target=urlopen, args=['http://localhost:8090/ping'])
         worker.start()
         worker_threads.append(worker)
 
-    profiler_thread_id = eliot_profiler._instance.thread.ident
-    profiler_callgraph = CallGraphRoot(
-        profiler_thread_id,
-        'profile',
-        datetime.datetime.now() - datetime.timedelta(seconds=monotonic()))
-
-    def profile_profiler():
-        before = monotonic()
-        while True:
-            time.sleep(0.01)
-            frame = sys._current_frames()[profiler_thread_id]
-            stack = generate_stack_trace(frame, 'line', False)
-            after = monotonic()
-            profiler_callgraph.ingest(stack, after - before, after)
-            before = after
-
-    profiler_profiler_thread = Thread(target=profile_profiler)
-    profiler_profiler_thread.setDaemon(True)
-    profiler_profiler_thread.start()
+    # profiler_thread_id = eliot_profiler._instance.thread.ident
+    # profiler_callgraph = CallGraphRoot(
+    #     profiler_thread_id,
+    #     'profile',
+    #     datetime.datetime.now() - datetime.timedelta(seconds=monotonic()))
+    #
+    # def profile_profiler():
+    #     before = monotonic()
+    #     while True:
+    #         time.sleep(0.01)
+    #         frame = sys._current_frames()[profiler_thread_id]
+    #         stack = generate_stack_trace(frame, 'line', False)
+    #         after = monotonic()
+    #         profiler_callgraph.ingest(stack, after - before, after)
+    #         before = after
+    #
+    # profiler_profiler_thread = Thread(target=profile_profiler)
+    # profiler_profiler_thread.setDaemon(True)
+    # profiler_profiler_thread.start()
 
     for thread in worker_threads:
         thread.join()
@@ -118,8 +118,8 @@ if __name__ == '__main__':
     print('Finished!')
     time.sleep(0.1)
 
-    with open('profiler_callgraph.json', 'w') as f:
-        f.write(json.dumps(profiler_callgraph.jsonize(), indent=2))
+    # with open('profiler_callgraph.json', 'w') as f:
+    #     f.write(json.dumps(profiler_callgraph.jsonize(), indent=2))
 
-    import prometheus_client
-    print(prometheus_client.generate_latest())
+    # import prometheus_client
+    # print(prometheus_client.generate_latest())

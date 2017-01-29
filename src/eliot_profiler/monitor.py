@@ -9,6 +9,7 @@ def enable_prometheus():
     from prometheus_client.core import \
         SummaryMetricFamily, \
         CounterMetricFamily, \
+        GaugeMetricFamily, \
         Summary, \
         REGISTRY
     from eliot import add_destination
@@ -38,10 +39,15 @@ def enable_prometheus():
                 'The number of tasks that Eliot profiler has elected not to profile, to reduce load',
                 value=_instance.unprofiled_tasks
             )
-            yield CounterMetricFamily(
+            yield GaugeMetricFamily(
                 'profiler_tasks_inflight',
                 'The number of tasks that Eliot profiler is currently profiling',
                 value=_instance.actions_since_last_run + len(_instance.thread_tasks)
+            )
+            yield GaugeMetricFamily(
+                'profiler_tasks_allowed',
+                'The number of tasks that the profiler thinks it can handle, whilst meeting its granularity and overhead targets',
+                value=_instance.actions_next_run
             )
 
     REGISTRY.register(ProfilerCollector())

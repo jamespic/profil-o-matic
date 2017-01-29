@@ -108,8 +108,9 @@ class Profiler(object):
             context.stack = []
             # This is racy, but it's not a disaster
             # if a small number of extra actions are profiled
-            if (len(self.thread_tasks) + self.actions_since_last_run
-                    < self.actions_next_run):
+            if self.simultaneous_tasks_profiled == 0 or (
+                    len(self.thread_tasks) + self.actions_since_last_run
+                        < self.actions_next_run):
                 self.actions_since_last_run += 1
                 context.logging = True
                 self.profiled_tasks += 1
@@ -182,7 +183,7 @@ class Profiler(object):
             ) or 1.0
             if performance_against_target <= 1:
                 # Performance was good, so maybe profile more actions
-                self.actions_next_run = self.simultaneous_tasks_profiled / performance_against_target
+                self.actions_next_run += self.simultaneous_tasks_profiled * (1.0 - performance_against_target)
                 wait_time = self.time_granularity - time_taken
             else:
                 # Performance wasn't so good, so wait longer, reducing granularity
