@@ -68,11 +68,15 @@ def app(environ, start_response):
 class ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
     daemon_threads = True
 
-def noop_dest(message):
-    return
-eliot_profiler.configure(max_overhead=0.05, code_granularity='line', simultaneous_tasks_profiled=15, time_granularity=0.2)
-# eliot_profiler.add_destination(noop_dest)
-eliot_profiler.add_destination(FileDestination(open('profile.log', 'w')))
+eliot_profiler.configure(max_overhead=0.05, code_granularity='line', simultaneous_tasks_profiled=15, time_granularity=0.05)
+
+
+# import socket
+# s = socket.socket()
+# s.connect(('127.0.0.1', 54637))
+# eliot_profiler.add_destination(FileDestination(s.makefile()))
+
+eliot_profiler.add_destination(FileDestination(open('profile.log', 'wb')))
 eliot.add_destination(FileDestination(open('app.log', 'w')))
 eliot_profiler.monkey_patch.patch()
 eliot_profiler.monitor.enable_prometheus()
