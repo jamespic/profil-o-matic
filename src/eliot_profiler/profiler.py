@@ -20,7 +20,11 @@ try:
     monotonic()  # Check it actually works
 except (ImportError, OSError):
     from monotonic import monotonic
-import pytz
+try:
+    utc = datetime.timezone.utc
+except AttributeError:
+    import pytz
+    utc = pytz.utc
 
 ACTION_STATUS_FIELD = 'action_status'
 ACTION_TYPE_FIELD = 'action_type'
@@ -48,7 +52,7 @@ class _MessageInfo(object):
         self.next_task_uuid = next_task_uuid
         self.frame = sys._getframe()
         self.thread = threading.currentThread().ident
-        self.clock = datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
+        self.clock = datetime.datetime.utcnow().replace(tzinfo=utc)
         self.monotonic = monotonic()
 
 
