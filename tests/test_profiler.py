@@ -41,7 +41,7 @@ def mock_current_frames():
 
 class EliotProfilerTest(unittest.TestCase):
     def test_max_actions_per_run(self):
-        instance = Profiler(max_actions_per_run=2)
+        instance = Profiler(simultaneous_tasks_profiled=2)
         instance.handle_message({'task_uuid': '1', 'action_status': 'started'})
         instance.handle_message({
             'task_uuid': '1',
