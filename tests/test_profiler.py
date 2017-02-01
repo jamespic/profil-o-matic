@@ -40,6 +40,7 @@ def mock_current_frames():
 
 
 class EliotProfilerTest(unittest.TestCase):
+    maxDiff = None
     def test_max_actions_per_run(self):
         instance = Profiler(simultaneous_tasks_profiled=2)
         instance.handle_message({'task_uuid': '1', 'action_status': 'started'})
@@ -131,6 +132,7 @@ class EliotProfilerTest(unittest.TestCase):
 
         self.assertEqual([{
             "task_uuid": "1",
+            "start_time": "1988-01-01T09:00:00",
             "children": [{
                 "start_time": "1988-01-01T09:00:00",
                 "instruction": "__main__.py:main",
@@ -211,6 +213,7 @@ class EliotProfilerTest(unittest.TestCase):
 
         self.assertEqual([{
             "source": "test_source",
+            "start_time": "1988-01-01T09:00:00",
             "task_uuid": "1",
             "children": [{
                 "start_time": "1988-01-01T09:00:00",

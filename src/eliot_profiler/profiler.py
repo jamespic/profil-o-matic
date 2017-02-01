@@ -184,7 +184,10 @@ class Profiler(object):
             ) or 1.0
             if performance_against_target <= 1:
                 # Performance was good, so maybe profile more actions
-                self.actions_next_run += self.simultaneous_tasks_profiled * (1.0 - performance_against_target)
+                self.actions_next_run += (
+                    self.simultaneous_tasks_profiled
+                    * (1.0 - performance_against_target)
+                )
                 wait_time = self.time_granularity - time_taken
             else:
                 # Performance wasn't so good, so wait longer, reducing granularity
@@ -212,7 +215,8 @@ class Profiler(object):
             call_graph = CallGraphRoot(
                 thread,
                 task,
-                message.clock - datetime.timedelta(seconds=message.monotonic))
+                message.clock,
+                message.monotonic)
             self.call_graphs[(thread, task)] = call_graph
         call_stack = generate_stack_trace(message.frame, self.code_granularity, True)
         call_graph.ingest(call_stack, 0.0, message.monotonic, message.message)

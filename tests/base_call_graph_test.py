@@ -4,17 +4,18 @@ import datetime
 class BaseCallGraphTest(object):
     def test_call_graph(self):
         instance = self.call_graph_class(
-            1, '12345', datetime.datetime(2016, 1, 21, 9, 0, 0))
-        instance.ingest([], 0.0, 0.0)
-        instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 1.0)
-        instance.ingest(['main', 'doIt', '_innerDoSomethingElse'], 1.0, 2.0)
-        instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 3.0)
-        instance.ingest(['main', 'doIt'], 1.0, 4.0)
-        instance.ingest(['main', 'doIt'], 0.0, 4.5, {'event': 'something'})
-        instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 5.0)
+            1, '12345', datetime.datetime(2016, 1, 21, 9, 0, 0), 1.0)
+        instance.ingest([], 0.0, 1.0)
+        instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 2.0)
+        instance.ingest(['main', 'doIt', '_innerDoSomethingElse'], 1.0, 3.0)
+        instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 4.0)
+        instance.ingest(['main', 'doIt'], 1.0, 5.0)
+        instance.ingest(['main', 'doIt'], 0.0, 5.5, {'event': 'something'})
+        instance.ingest(['main', 'doIt', '_innerDoIt'], 1.0, 6.0)
         jsonized = instance.jsonize()
         self.assertEqual({
             "task_uuid": "12345",
+            "start_time": "2016-01-21T09:00:00",
             "children": [{
                 "start_time": "2016-01-21T09:00:01",
                 "instruction": "main",

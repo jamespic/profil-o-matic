@@ -56,7 +56,7 @@ setup(
     ext_modules=extensions,
     cmdclass={'sdist': sdist},
     install_requires=[
-        'eliot',
+        'eliot>=0.9.0',
         'monotonic',
         'pytz',
         'six'

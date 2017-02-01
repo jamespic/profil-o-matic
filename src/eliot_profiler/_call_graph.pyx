@@ -67,13 +67,15 @@ cdef class _MessageNode(_Jsonizable):
 cdef class CallGraphRoot(object):
     cdef long thread
     cdef basestring task_uuid
-    cdef datetime.datetime wallclock_minus_monotonic
+    cdef datetime.datetime start_time
+    cdef float start_monotonic
     cdef list children
 
-    def __init__(self, long thread, basestring task_uuid, datetime.datetime wallclock_minus_monotonic):
+    def __init__(self, long thread, basestring task_uuid, datetime.datetime start_time, float start_monotonic):
         self.thread = thread
         self.task_uuid = task_uuid
-        self.wallclock_minus_monotonic = wallclock_minus_monotonic
+        self.start_time = start_time
+        self.start_monotonic = start_monotonic
         self.children = []
 
     def ingest(self, list call_stack, double time, double monotime, message=None):
@@ -108,8 +110,10 @@ cdef class CallGraphRoot(object):
         return {
             'thread': self.thread,
             'task_uuid': self.task_uuid,
+            'start_time': self.start_time.isoformat(),
             'children': [
-                node.jsonize(self.wallclock_minus_monotonic)
+                node.jsonize(self.start_time
+                             - datetime.timedelta(seconds=self.start_monotonic))
                 for node in self.children
             ]
         }

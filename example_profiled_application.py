@@ -95,7 +95,7 @@ if __name__ == '__main__':
     # profiler_callgraph = CallGraphRoot(
     #     profiler_thread_id,
     #     'profile',
-    #     datetime.datetime.now() - datetime.timedelta(seconds=monotonic()))
+    #     datetime.datetime.now(), seconds=monotonic())
     #
     # def profile_profiler():
     #     before = monotonic()

@@ -48,10 +48,11 @@ class _MessageNode(object):
 
 
 class CallGraphRoot(object):
-    def __init__(self, thread, task_uuid, wallclock_minus_monotonic):
+    def __init__(self, thread, task_uuid, start_time, start_monotonic):
         self.thread = thread
         self.task_uuid = task_uuid
-        self.wallclock_minus_monotonic = wallclock_minus_monotonic
+        self.start_time = start_time
+        self.start_monotonic = start_monotonic
         self.children = []
 
     def ingest(self, call_stack, time, monotime, message=None):
@@ -83,8 +84,10 @@ class CallGraphRoot(object):
         return {
             'thread': self.thread,
             'task_uuid': self.task_uuid,
+            'start_time': self.start_time.isoformat(),
             'children': [
-                node.jsonize(self.wallclock_minus_monotonic)
+                node.jsonize(self.start_time
+                             - datetime.timedelta(seconds=self.start_monotonic))
                 for node in self.children
             ]
         }
