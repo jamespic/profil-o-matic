@@ -32,6 +32,12 @@ def mock_frame(*frames):
     return result
 
 
+def raise_nested_exception():
+    def inner_raise_exception():
+        raise Exception()
+    inner_raise_exception()
+
+
 def mock_current_frames():
     return {
         12345: mock_frame('__main__:main:1', 'business.app:__init__:5',
@@ -252,3 +258,12 @@ class EliotProfilerTest(unittest.TestCase):
             }],
             "thread": 12345
         }], messages)
+
+    def test_messageinfo_exc_info(self):
+        try:
+            raise_nested_exception()
+        except:
+            instance = _MessageInfo(None, None)
+        trace = generate_stack_trace(instance.frame, 'method', False)
+        self.assertTrue(trace[-1].endswith('inner_raise_exception'))
+        self.assertTrue(trace[-2].endswith('raise_nested_exception'))

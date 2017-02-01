@@ -51,10 +51,18 @@ class _MessageInfo(object):
     def __init__(self, message, next_task_uuid):
         self.message = message
         self.next_task_uuid = next_task_uuid
-        self.frame = sys._getframe()
         self.thread = threading.currentThread().ident
         self.clock = datetime.datetime.utcnow().replace(tzinfo=utc)
         self.monotonic = monotonic()
+
+        _, _, tb = sys.exc_info()
+        if tb is not None:
+            while tb.tb_next is not None:
+                tb = tb.tb_next
+            self.frame = tb.tb_frame
+        else:
+            self.frame = sys._getframe()
+
 
 
 class Profiler(object):
