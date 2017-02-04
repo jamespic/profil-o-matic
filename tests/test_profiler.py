@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import json
 import unittest
 from mock import patch
 import datetime
@@ -136,40 +137,51 @@ class EliotProfilerTest(unittest.TestCase):
         msg2.thread = 12345
         instance._ingest_message(msg2)
 
-        self.assertEqual([{
-            "task_uuid": "1",
-            "start_time": "1988-01-01T09:00:00",
-            "children": [{
+        self.assertEqual([
+            {
+                "thread": 12345,
                 "start_time": "1988-01-01T09:00:00",
-                "instruction": "__main__.py:main",
+                "task_uuid": "1",
                 "self_time": 0.0,
                 "end_time": "1988-01-01T09:00:01",
                 "time": 0.0,
-                "children": [{
-                    "start_time": "1988-01-01T09:00:00",
-                    "instruction": "business/app.py:__init__",
-                    "self_time": 0.0,
-                    "end_time": "1988-01-01T09:00:01",
-                    "time": 0.0,
-                    "children": [{
-                        "message": {
-                            "msg": "Hi",
-                            "task_uuid": "1",
-                            "action_status": "started"
-                        },
-                        "message_time": "1988-01-01T09:00:00"
-                    }, {
-                        "message": {
-                            "msg": "World",
-                            "task_uuid": "1",
-                            "action_status": "success"
-                        },
-                        "message_time": "1988-01-01T09:00:01"
-                    }]
-                }]
-            }],
-            "thread": 12345
-        }], messages)
+                "children": [
+                    {
+                        "start_time": "1988-01-01T09:00:00",
+                        "instruction": "__main__.py:main",
+                        "self_time": 0.0,
+                        "end_time": "1988-01-01T09:00:01",
+                        "time": 0.0,
+                        "children": [
+                            {
+                                "start_time": "1988-01-01T09:00:00",
+                                "instruction": "business/app.py:__init__",
+                                "self_time": 0.0,
+                                "end_time": "1988-01-01T09:00:00",
+                                "time": 0.0,
+                                "message": {
+                                    "msg": "Hi",
+                                    "task_uuid": "1",
+                                    "action_status": "started"
+                                }
+                            },
+                            {
+                                "start_time": "1988-01-01T09:00:01",
+                                "instruction": "business/app.py:__init__",
+                                "self_time": 0.0,
+                                "end_time": "1988-01-01T09:00:01",
+                                "time": 0.0,
+                                "message": {
+                                    "msg": "World",
+                                    "task_uuid": "1",
+                                    "action_status": "success"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ], messages)
 
     @patch('sys._current_frames', mock_current_frames)
     @patch('eliot_profiler.profiler.generate_stack_trace', generate_stack_trace
@@ -196,7 +208,7 @@ class EliotProfilerTest(unittest.TestCase):
         msg1.thread = 12345
         instance.message_queue.append(msg1)
 
-        instance._profile_once(0.1, 0.5)
+        instance._profile_once(0.25, 0.5)
 
         msg2 = _MessageInfo(
             message={
@@ -215,48 +227,67 @@ class EliotProfilerTest(unittest.TestCase):
         msg2.thread = 12345
         instance.message_queue.append(msg2)
 
-        instance._profile_once(0.1, 1.5)
+        instance._profile_once(0.25, 1.5)
 
         self.assertEqual([{
-            "source": "test_source",
+            "thread": 12345,
             "start_time": "1988-01-01T09:00:00",
+            "source": "test_source",
             "task_uuid": "1",
-            "children": [{
-                "start_time": "1988-01-01T09:00:00",
-                "instruction": "__main__.py:main",
-                "self_time": 0.0,
-                "end_time": "1988-01-01T09:00:01",
-                "time": 0.1,
-                "children": [{
+            "self_time": 0.0,
+            "end_time": "1988-01-01T09:00:01",
+            "time": 0.25,
+            "children": [
+                {
                     "start_time": "1988-01-01T09:00:00",
-                    "instruction": "business/app.py:__init__",
+                    "instruction": "__main__.py:main",
                     "self_time": 0.0,
                     "end_time": "1988-01-01T09:00:01",
-                    "time": 0.1,
-                    "children": [{
-                        "message": {
-                            "msg": "Hi",
-                            "task_uuid": "1",
-                            "action_status": "started"
+                    "time": 0.25,
+                    "children": [
+                        {
+                            "start_time": "1988-01-01T09:00:00",
+                            "instruction": "business/app.py:__init__",
+                            "self_time": 0.0,
+                            "end_time": "1988-01-01T09:00:00",
+                            "time": 0.0,
+                            "message": {
+                                "msg": "Hi",
+                                "task_uuid": "1",
+                                "action_status": "started"
+                            }
                         },
-                        "message_time": "1988-01-01T09:00:00"
-                    }, {
-                        "self_time": 0.1,
-                        "start_time": "1988-01-01T09:00:00.500000",
-                        "instruction": "business/backend.py:doStuff",
-                        "end_time": "1988-01-01T09:00:00.500000",
-                        "time": 0.1
-                    }, {
-                        "message": {
-                            "msg": "World",
-                            "task_uuid": "1",
-                            "action_status": "success"
+                        {
+                            "start_time": "1988-01-01T09:00:00.500000",
+                            "instruction": "business/app.py:__init__",
+                            "self_time": 0.0,
+                            "end_time": "1988-01-01T09:00:00.500000",
+                            "time": 0.25,
+                            "children": [
+                                {
+                                    "start_time": "1988-01-01T09:00:00.500000",
+                                    "self_time": 0.25,
+                                    "instruction": "business/backend.py:doStuff",
+                                    "end_time": "1988-01-01T09:00:00.500000",
+                                    "time": 0.25
+                                }
+                            ]
                         },
-                        "message_time": "1988-01-01T09:00:01"
-                    }]
-                }]
-            }],
-            "thread": 12345
+                        {
+                            "start_time": "1988-01-01T09:00:01",
+                            "instruction": "business/app.py:__init__",
+                            "self_time": 0.0,
+                            "end_time": "1988-01-01T09:00:01",
+                            "time": 0.0,
+                            "message": {
+                                "msg": "World",
+                                "task_uuid": "1",
+                                "action_status": "success"
+                            }
+                        }
+                    ]
+                }
+            ]
         }], messages)
 
     def test_messageinfo_exc_info(self):
