@@ -11,20 +11,19 @@ cdef class _CallGraphNode(object):
     cdef object message
 
     def __init__(self,
-                 str instruction_pointer=None,
-                 double time=0.0,
-                 double self_time=0.0,
-                 double min_monotonic=0.0,
-                 double max_monotonic=0.0,
-                 object message=None):
+                 str instruction_pointer,
+                 double time,
+                 double self_time,
+                 double min_monotonic,
+                 double max_monotonic):
         self.instruction_pointer = instruction_pointer
         self.time = time
         self.self_time = self_time
         self.min_monotonic = min_monotonic
         self.max_monotonic = max_monotonic
-        self.message = message
         self.archived_children = []
         self.current_children = []
+        self.message = None
 
     cdef add_time(self, float time, float monotime):
         self.time += time
@@ -67,7 +66,7 @@ cdef class CallGraphRoot(_CallGraphNode):
         self.wall_clock_minus_monotonic = (
             start_time - datetime.timedelta(seconds=start_monotonic))
 
-    def ingest(self, list call_stack, double time, double monotime, message=None):
+    cpdef ingest(self, list call_stack, double time, double monotime, message=None):
         cdef _CallGraphNode child
         cdef str instruction_pointer
         cdef str last_instruction = None
@@ -91,7 +90,7 @@ cdef class CallGraphRoot(_CallGraphNode):
 
         if message is not None:
             node.archived_children.extend(node.current_children)
-            new_node = _CallGraphNode(last_instruction, time, 0.0, monotime, monotime, message)
+            new_node = _CallGraphNode(last_instruction, time, 0.0, monotime, monotime)
             new_node.message = message
             node.archived_children.append(new_node)
             node.current_children = []

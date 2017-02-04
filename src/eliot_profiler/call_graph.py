@@ -14,20 +14,19 @@ class _CallGraphNode(object):
 
 
     def __init__(self,
-                 instruction_pointer=None,
-                 time=0.0,
-                 self_time=0.0,
-                 min_monotonic=0.0,
-                 max_monotonic=0.0,
-                 message=None):
+                 instruction_pointer,
+                 time,
+                 self_time,
+                 min_monotonic,
+                 max_monotonic):
         self.instruction_pointer = instruction_pointer
         self.time = time
         self.self_time = self_time
         self.min_monotonic = min_monotonic
         self.max_monotonic = max_monotonic
-        self.message = message
         self.archived_children = []
         self.current_children = []
+        self.message = None
 
     def add_time(self, time, monotime):
         self.time += time
@@ -93,7 +92,7 @@ class CallGraphRoot(_CallGraphNode):
 
         if message is not None:
             node.archived_children.extend(node.current_children)
-            new_node = _CallGraphNode(last_instruction, time, 0.0, monotime, monotime, message)
+            new_node = _CallGraphNode(last_instruction, time, 0.0, monotime, monotime)
             new_node.message = message
             node.archived_children.append(new_node)
             node.current_children = []
