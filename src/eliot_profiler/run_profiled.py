@@ -63,6 +63,10 @@ parser.add_argument(
     help='Run code as Python module'
 )
 parser.add_argument(
+    '--profile-profiler', type=argparse.FileType('w'), metavar='PROFILER_PROFILE_OUTPUT',
+    help='Profile the profiler itself, and output the data to the file. Mostly for dev use.'
+)
+parser.add_argument(
     'target',
     help='The file or module you would like to profile'
 )
@@ -70,6 +74,7 @@ parser.add_argument(
     'target_args', nargs='*',
     help='Arguments for the application being profiled'
 )
+
 
 args = parser.parse_args()
 
@@ -106,7 +111,38 @@ if not (args.output_socket or args.output_file):
     eliot_profiler.add_destination(eliot.FileDestination(sys.stderr))
 
 sys.argv = [args.target] + args.target_args
-if args.m:
-    runpy.run_module(args.target, run_name='__main__')
-else:
-    runpy.run_path(args.target, run_name='__main__')
+
+if args.profile_profiler:
+    from .profiler import CallGraphRoot, monotonic, generate_stack_trace
+    import time
+    import datetime
+    import threading
+    profiler_thread_id = eliot_profiler._instance.thread.ident
+    profiler_callgraph = CallGraphRoot(
+        profiler_thread_id,
+        'profile',
+        datetime.datetime.now(),
+        monotonic())
+
+    def profile_profiler():
+        before = monotonic()
+        while True:
+            time.sleep(0.01)
+            frame = sys._current_frames()[profiler_thread_id]
+            stack = generate_stack_trace(frame, 'line', False)
+            after = monotonic()
+            profiler_callgraph.ingest(stack, after - before, after)
+            before = after
+
+    profiler_profiler_thread = threading.Thread(target=profile_profiler)
+    profiler_profiler_thread.setDaemon(True)
+    profiler_profiler_thread.start()
+
+try:
+    if args.m:
+        runpy.run_module(args.target, run_name='__main__')
+    else:
+        runpy.run_path(args.target, run_name='__main__')
+finally:
+    if args.profile_profiler:
+        args.profile_profiler.write(json.dumps(profiler_callgraph.jsonize(), indent=2))
