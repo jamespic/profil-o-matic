@@ -1,4 +1,5 @@
 import datetime
+import platform
 import six
 import sys
 import threading
@@ -41,9 +42,9 @@ _PROFILER_DEFAULTS = {
     'simultaneous_tasks_profiled': 10,
     'max_overhead': 0.02,  # fraction
     'time_granularity': 0.1,  # seconds
-    'code_granularity': 'method',  # line, method, or file
+    'code_granularity': 'line',  # line, method, or file
     'store_all_logs': False,
-    'source_name': None
+    'source_name': platform.node()
 }
 
 
@@ -238,8 +239,7 @@ class Profiler(object):
 
     def _emit(self, message):
         jsonized = message.jsonize()
-        if self.source_name:
-            jsonized['source'] = self.source_name
+        jsonized['source'] = self.source_name
         for destination in self.destinations:
             try:
                 destination(jsonized)

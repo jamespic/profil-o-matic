@@ -101,7 +101,7 @@ class EliotProfilerTest(unittest.TestCase):
     @patch('eliot_profiler.profiler.generate_stack_trace', generate_stack_trace
            )  # Use pure Python one, to allow use of mock stack frames
     def test_ingest_message(self):
-        instance = Profiler()
+        instance = Profiler(source_name='localhost', code_granularity='method')
         messages = []
         instance.add_destination(messages.append)
 
@@ -140,6 +140,7 @@ class EliotProfilerTest(unittest.TestCase):
         self.assertEqual([
             {
                 "thread": 12345,
+                "source": "localhost",
                 "start_time": "1988-01-01T09:00:00",
                 "task_uuid": "1",
                 "self_time": 0.0,
@@ -189,7 +190,7 @@ class EliotProfilerTest(unittest.TestCase):
     def test_profiling_cycle(self):
         # import pudb
         # pu.db
-        instance = Profiler(source_name='test_source')
+        instance = Profiler(source_name='test_source', code_granularity='method')
         messages = []
         instance.add_destination(messages.append)
 
