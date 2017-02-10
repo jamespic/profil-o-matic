@@ -145,5 +145,6 @@ try:
     else:
         runpy.run_path(args.target, run_name='__main__')
 finally:
+    eliot_profiler._instance.stop()
     if args.profile_profiler:
         args.profile_profiler.write(json.dumps(profiler_callgraph.jsonize(), indent=2))
