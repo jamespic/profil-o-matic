@@ -73,7 +73,7 @@ class Profiler(object):
         'actions_since_last_run', 'actions_next_run', 'message_queue',
         'action_context', 'destinations', 'thread_tasks', 'call_graphs',
         'thread', 'total_overhead', 'granularity_sum', 'total_samples',
-        'profiled_tasks', 'unprofiled_tasks']
+        'profiled_tasks', 'unprofiled_tasks', 'stopped']
     def __init__(self, **kwargs):
         self.configure(**kwargs)
         self.actions_since_last_run = 0
@@ -89,6 +89,7 @@ class Profiler(object):
         self.total_samples = 0
         self.profiled_tasks = 0
         self.unprofiled_tasks = 0
+        self.stopped = False
 
     def configure(self, **kwargs):
         for arg in _PROFILER_DEFAULTS.keys():
@@ -184,6 +185,8 @@ class Profiler(object):
             start_time = monotonic()
             time_to_record = start_time - last_start_time
             self._ingest_messages()
+            if self.stopped:
+                return
             self._profile_stacks(time_to_record, monotonic())
             end_time = monotonic()
             time_taken = end_time - start_time
@@ -210,11 +213,19 @@ class Profiler(object):
     def start(self):
         if self.thread:
             return
+        self.stopped = False
         eliot.add_destination(self.handle_message)
         self.thread = threading.Thread(
             target=self._profiler_loop, name='Eliot Profiler Thread')
         self.thread.setDaemon(True)
         self.thread.start()
+
+    def stop(self):
+        if self.thread:
+            self.stopped = True
+            self.thread.join()
+            self.thread = None
+
 
     def _ingest_message(self, message):
         thread = message.thread
