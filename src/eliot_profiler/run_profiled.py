@@ -4,6 +4,7 @@ import eliot_profiler
 import eliot_profiler.monkey_patch
 import eliot_profiler.monitor
 import json
+import platform
 import runpy
 import socket
 import sys
@@ -18,7 +19,7 @@ parser = argparse.ArgumentParser(
     description="A low-overhead sampling profiler for Python code, that takes advantage of Eliot to link actions to code"
 )
 parser.add_argument(
-    '-s', '--source-name',
+    '-s', '--source-name', default=platform.node(),
     help='The name of the data source - usually hostname or app name')
 parser.add_argument(
     '-o', '--output-file', type=argparse.FileType('w'),
@@ -43,7 +44,7 @@ parser.add_argument(
     help='The time granularity that the profiler should try to acheive in its measurements'
 )
 parser.add_argument(
-    '-c', '--code-granularity', choices=['file', 'method', 'line'], default='method',
+    '-c', '--code-granularity', choices=['file', 'method', 'line'], default='line',
     help='The level at which the profiler should measure performance - can be file, method, or line'
 )
 parser.add_argument(
