@@ -1,19 +1,21 @@
 import argparse
-import eliot
-import eliot_profiler
-import eliot_profiler.monkey_patch
-import eliot_profiler.monitor
+import profilomatic
+import profilomatic.monitor
 import json
 import platform
 import runpy
 import socket
 import sys
 
+from profilomatic.output import file_destination, no_flush_destination
+
+
 def percentage(s):
     if s.endswith('%'):
         return float(s[:-1]) / 100.0
     else:
         return float(s)
+
 
 parser = argparse.ArgumentParser(
     description="A low-overhead sampling profiler for Python code, that takes advantage of Eliot to link actions to code"
@@ -52,7 +54,7 @@ parser.add_argument(
     help='Store all logs in profiler call graphs, not just action start and end messages'
 )
 parser.add_argument(
-    '-p', '--monkey-patch', action='store_true',
+    '-e', '--eliot', action='store_true',
     help='Monkey patch eliot, to allow profiler to record remote task creation'
 )
 parser.add_argument(
@@ -79,7 +81,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-eliot_profiler.configure(
+profilomatic.configure(
     source_name=args.source_name,
     simultaneous_tasks_profiled=args.tasks_profiled,
     max_overhead=args.max_overhead,
@@ -88,28 +90,26 @@ eliot_profiler.configure(
     store_all_logs=args.all_logs
 )
 
-if args.monkey_patch:
-    eliot_profiler.monkey_patch.patch()
+if args.eliot:
+    import profilomatic.eliot
+    profilomatic.eliot.patch()
 
 if args.monitor:
-    eliot_profiler.monitor.enable_prometheus()
+    profilomatic.monitor.enable_prometheus()
 
 if args.output_file:
     if not args.no_flush:
-        eliot_profiler.add_destination(eliot.FileDestination(args.output_file))
+        profilomatic.add_destination(file_destination(args.output_file))
     else:
-        f = args.output_file
-        def write_no_flush(message):
-            f.write(json.dumps(message) + '\n')
-        eliot_profiler.add_destination(write_no_flush)
+        profilomatic.add_destination(no_flush_destination(args.output_file))
 if args.output_socket:
     host, port = args.output_socket.split(':')
     port = int(port)
     s = socket.socket()
     s.connect((host, port))
-    eliot_profiler.add_destination(eliot.FileDestination(s.makefile()))
+    profilomatic.add_destination(file_destination(s.makefile()))
 if not (args.output_socket or args.output_file):
-    eliot_profiler.add_destination(eliot.FileDestination(sys.stderr))
+    profilomatic.add_destination(file_destination(sys.stderr))
 
 sys.argv = [args.target] + args.target_args
 
@@ -118,7 +118,7 @@ if args.profile_profiler:
     import time
     import datetime
     import threading
-    profiler_thread_id = eliot_profiler._instance.thread.ident
+    profiler_thread_id = profilomatic._instance.thread.ident
     profiler_callgraph = CallGraphRoot(
         profiler_thread_id,
         'profile',
@@ -145,6 +145,6 @@ try:
     else:
         runpy.run_path(args.target, run_name='__main__')
 finally:
-    eliot_profiler._instance.stop()
+    profilomatic._instance.stop()
     if args.profile_profiler:
         args.profile_profiler.write(json.dumps(profiler_callgraph.jsonize(), indent=2))

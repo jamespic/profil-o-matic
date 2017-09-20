@@ -13,40 +13,40 @@ if python_implementation() == 'CPython':
     try:
         from Cython.Build import cythonize
         extensions = cythonize([
-            'src/eliot_profiler/_call_graph.pyx',
-            'src/eliot_profiler/_stack_trace.pyx'
+            'src/profilomatic/_call_graph.pyx',
+            'src/profilomatic/_stack_trace.pyx'
         ])
         if supports_fast_monotonic:
-            extensions.extend(cythonize('src/eliot_profiler/fast_monotonic.pyx'))
+            extensions.extend(cythonize('src/profilomatic/fast_monotonic.pyx'))
     except ImportError:
         extensions = [
             Extension(
-                'eliot_profiler._call_graph',
-                ['src/eliot_profiler/_call_graph.c']
+                'profilomatic._call_graph',
+                ['src/profilomatic/_call_graph.c']
             ),
             Extension(
-                'eliot_profiler._stack_trace',
-                ['src/eliot_profiler/_stack_trace.c']
+                'profilomatic._stack_trace',
+                ['src/profilomatic/_stack_trace.c']
             )
         ]
         if supports_fast_monotonic:
             extensions.append(Extension(
-                'eliot_profiler.fast_monotonic',
-                ['src/eliot_profiler/fast_monotonic.c']
+                'profilomatic.fast_monotonic',
+                ['src/profilomatic/fast_monotonic.c']
             ))
 
 
 class sdist(_sdist):
     def run(self):
         from Cython.Build import cythonize
-        cythonize(['src/eliot_profiler/**.pyx'])
+        cythonize(['src/profilomatic/**.pyx'])
         _sdist.run(self)
 
 
 setup(
-    name='Eliot Profiler',
-    version='0.1',
-    description='A hybrid profiler / mini APM tool, that links in with Eliot',
+    name='Profil-o-matic',
+    version='0.2',
+    description='A hybrid profiler / mini APM tool, that measures line-level performance of your business-domain actions',
     author='James Pickering',
     author_email='james_pic@hotmail.com',
     license='MIT',
@@ -56,7 +56,6 @@ setup(
     ext_modules=extensions,
     cmdclass={'sdist': sdist},
     install_requires=[
-        'eliot>=0.9.0',
         'monotonic',
         'pytz',
         'six'
@@ -67,5 +66,8 @@ setup(
     tests_require=[
         'mock'
     ],
+    extras_require={
+        'eliot': ['eliot>=0.9.0']
+    },
     test_suite='tests'
 )

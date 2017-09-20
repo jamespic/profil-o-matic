@@ -1,11 +1,11 @@
 from __future__ import absolute_import, print_function
-import eliot_profiler
-import eliot_profiler.monkey_patch
-import eliot_profiler.monitor
+import profilomatic
+import profilomatic.monkey_patch
+import profilomatic.monitor
 import eliot
 import datetime
 import json
-from eliot_profiler.fast_monotonic import monotonic
+from profilomatic.fast_monotonic import monotonic
 from eliot import startAction, Action, FileDestination
 from threading import Thread
 from prometheus_client.exposition import make_wsgi_app
@@ -23,11 +23,11 @@ import sys
 import time
 
 try:
-    from eliot_profiler._call_graph import CallGraphRoot
-    from eliot_profiler._stack_trace import generate_stack_trace
+    from profilomatic._call_graph import CallGraphRoot
+    from profilomatic._stack_trace import generate_stack_trace
 except ImportError:
-    from eliot_profiler.call_graph import CallGraphRoot
-    from eliot_profiler.stack_trace import generate_stack_trace
+    from profilomatic.call_graph import CallGraphRoot
+    from profilomatic.stack_trace import generate_stack_trace
 
 
 
@@ -68,18 +68,18 @@ def app(environ, start_response):
 class ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
     daemon_threads = True
 
-# eliot_profiler.configure(max_overhead=0.05, code_granularity='line', simultaneous_tasks_profiled=15, time_granularity=0.05)
+# profilomatic.configure(max_overhead=0.05, code_granularity='line', simultaneous_tasks_profiled=15, time_granularity=0.05)
 
 
 # import socket
 # s = socket.socket()
 # s.connect(('127.0.0.1', 54637))
-# eliot_profiler.add_destination(FileDestination(s.makefile()))
+# profilomatic.add_destination(FileDestination(s.makefile()))
 
-# eliot_profiler.add_destination(FileDestination(open('profile.log', 'wb')))
+# profilomatic.add_destination(FileDestination(open('profile.log', 'wb')))
 eliot.add_destination(FileDestination(open('app.log', 'w')))
-# eliot_profiler.monkey_patch.patch()
-# eliot_profiler.monitor.enable_prometheus()
+# profilomatic.monkey_patch.patch()
+# profilomatic.monitor.enable_prometheus()
 
 if __name__ == '__main__':
     server = make_server('', 8090, app, server_class=ThreadingWSGIServer)
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         worker.start()
         worker_threads.append(worker)
 
-    # profiler_thread_id = eliot_profiler._instance.thread.ident
+    # profiler_thread_id = profilomatic._instance.thread.ident
     # profiler_callgraph = CallGraphRoot(
     #     profiler_thread_id,
     #     'profile',

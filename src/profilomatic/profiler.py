@@ -14,8 +14,6 @@ except ImportError:
     from .call_graph import CallGraphRoot
     from .stack_trace import generate_stack_trace
 
-import eliot
-
 try:
     from fast_monotonic import monotonic
     monotonic()  # Check it actually works
@@ -32,7 +30,7 @@ ACTION_TYPE_FIELD = 'action_type'
 TASK_UUID_FIELD = 'task_uuid'
 TASK_LEVEL_FIELD = 'task_level'
 
-REMOTE_TASK_ACTION = 'eliot_profiler:linked_remote_task'
+REMOTE_TASK_ACTION = 'profilomatic:linked_remote_task'
 
 STARTED_STATUS = 'started'
 SUCCEEDED_STATUS = 'succeeded'
@@ -63,7 +61,6 @@ class _MessageInfo(object):
             self.frame = tb.tb_frame
         else:
             self.frame = sys._getframe()
-
 
 
 class Profiler(object):
@@ -214,9 +211,8 @@ class Profiler(object):
         if self.thread:
             return
         self.stopped = False
-        eliot.add_destination(self.handle_message)
         self.thread = threading.Thread(
-            target=self._profiler_loop, name='Eliot Profiler Thread')
+            target=self._profiler_loop, name='Profilomatic Thread')
         self.thread.setDaemon(True)
         self.thread.start()
 
@@ -225,6 +221,13 @@ class Profiler(object):
             self.stopped = True
             self.thread.join()
             self.thread = None
+
+
+    def current_task_uuid(self):
+        try:
+            return self.action_context.stack[-1]
+        except:
+            return None
 
 
     def _ingest_message(self, message):

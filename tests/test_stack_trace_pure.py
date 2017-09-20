@@ -1,6 +1,6 @@
 import unittest
 from .base_stack_trace_test import BaseStackTraceTest
-from eliot_profiler.stack_trace import generate_stack_trace
+from profilomatic.stack_trace import generate_stack_trace
 
 
 class PureStackTraceTest(BaseStackTraceTest, unittest.TestCase):

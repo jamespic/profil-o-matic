@@ -1,15 +1,15 @@
 import eliot
-import eliot_profiler
+import profilomatic
 
 # Configure output the same way as eliot
 log_destination = eliot.FileDestination(open('app_log.log', 'w'))
 prof_destination = eliot.FileDestination(open('app_prof.log', 'w'))
 
 eliot.add_destination(log_destination)
-eliot_profiler.add_destination(prof_destination)
+profilomatic.add_destination(prof_destination)
 
 # Optionally set your options
-eliot_profiler.configure(
+profilomatic.configure(
     max_overhead=0.02,  # Autotune granularity to target a desired profiling overhead - 2% in this case
     time_granularity=0.01,  # Sampling frequency - 10ms in this case
     code_granularity='method',  # Get file, method, or line-level performance data

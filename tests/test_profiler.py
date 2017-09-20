@@ -1,11 +1,10 @@
 from __future__ import absolute_import
-import json
 import unittest
 from mock import patch
 import datetime
 import collections
-from eliot_profiler.profiler import Profiler, _MessageInfo
-from eliot_profiler.stack_trace import generate_stack_trace
+from profilomatic.profiler import Profiler, _MessageInfo
+from profilomatic.stack_trace import generate_stack_trace
 
 
 def drain_queue(q):
@@ -98,7 +97,7 @@ class EliotProfilerTest(unittest.TestCase):
         self.assertEqual('started', messages[0].message['action_status'])
         self.assertEqual('failed', messages[1].message['action_status'])
 
-    @patch('eliot_profiler.profiler.generate_stack_trace', generate_stack_trace
+    @patch('profilomatic.profiler.generate_stack_trace', generate_stack_trace
            )  # Use pure Python one, to allow use of mock stack frames
     def test_ingest_message(self):
         instance = Profiler(source_name='localhost', code_granularity='method')
@@ -114,7 +113,7 @@ class EliotProfilerTest(unittest.TestCase):
             next_task_uuid='1')
         msg1.frame = mock_frame('__main__:main:1', 'business.app:__init__:5',
                                 'eliot._action:startAction:100',
-                                'eliot_profiler:emit:101')
+                                'profilomatic:emit:101')
         msg1.monotonic = 0.0
         msg1.clock = datetime.datetime(1988, 1, 1, 9, 0, 0)
         msg1.thread = 12345
@@ -129,7 +128,7 @@ class EliotProfilerTest(unittest.TestCase):
             next_task_uuid=None)
         msg2.frame = mock_frame('__main__:main:1', 'business.app:__init__:5',
                                 'eliot._action:endAction:100',
-                                'eliot_profiler:emit:101')
+                                'profilomatic:emit:101')
         msg2.monotonic = 1.0
         msg2.clock = datetime.datetime(
             1987, 1, 1, 9, 0,
@@ -185,7 +184,7 @@ class EliotProfilerTest(unittest.TestCase):
         ], messages)
 
     @patch('sys._current_frames', mock_current_frames)
-    @patch('eliot_profiler.profiler.generate_stack_trace', generate_stack_trace
+    @patch('profilomatic.profiler.generate_stack_trace', generate_stack_trace
            )  # Use pure Python one, to allow use of mock stack frames
     def test_profiling_cycle(self):
         # import pudb
@@ -203,7 +202,7 @@ class EliotProfilerTest(unittest.TestCase):
             next_task_uuid='1')
         msg1.frame = mock_frame('__main__:main:1', 'business.app:__init__:5',
                                 'eliot._action:startAction:100',
-                                'eliot_profiler:emit:101')
+                                'profilomatic:emit:101')
         msg1.monotonic = 0.0
         msg1.clock = datetime.datetime(1988, 1, 1, 9, 0, 0)
         msg1.thread = 12345
@@ -220,7 +219,7 @@ class EliotProfilerTest(unittest.TestCase):
             next_task_uuid=None)
         msg2.frame = mock_frame('__main__:main:1', 'business.app:__init__:5',
                                 'eliot._action:endAction:100',
-                                'eliot_profiler:emit:101')
+                                'profilomatic:emit:101')
         msg2.monotonic = 1.0
         msg2.clock = datetime.datetime(
             1987, 1, 1, 9, 0,

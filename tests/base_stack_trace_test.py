@@ -31,8 +31,8 @@ test_frame = make_frame(
     ('framework.module', 'run', 6),
     ('eliot', 'initialise', 7),
     ('mylogger', 'dostuff', 10),
-    ('eliot_profiler', 'profile', 12),
-    ('eliot_profiler.profile', 'loop', 14),
+    ('profilomatic', 'profile', 12),
+    ('profilomatic.profile', 'loop', 14),
     ('eliot._output', 'write', 16),
     ('eliot', 'log', 16),
 )
@@ -47,8 +47,8 @@ class BaseStackTraceTest(object):
                 "framework/module.py:run:6",
                 "eliot.py:initialise:7",
                 "mylogger.py:dostuff:10",
-                "eliot_profiler.py:profile:12",
-                "eliot_profiler/profile.py:loop:14",
+                "profilomatic.py:profile:12",
+                "profilomatic/profile.py:loop:14",
                 "eliot/_output.py:write:16",
                 "eliot.py:log:16"
             ],
@@ -63,8 +63,8 @@ class BaseStackTraceTest(object):
                 "framework/module.py:run",
                 "eliot.py:initialise",
                 "mylogger.py:dostuff",
-                "eliot_profiler.py:profile",
-                "eliot_profiler/profile.py:loop",
+                "profilomatic.py:profile",
+                "profilomatic/profile.py:loop",
                 "eliot/_output.py:write",
                 "eliot.py:log"
             ],
@@ -79,8 +79,8 @@ class BaseStackTraceTest(object):
                 "framework/module.py",
                 "eliot.py",
                 "mylogger.py",
-                "eliot_profiler.py",
-                "eliot_profiler/profile.py",
+                "profilomatic.py",
+                "profilomatic/profile.py",
                 "eliot/_output.py",
                 "eliot.py"
             ],

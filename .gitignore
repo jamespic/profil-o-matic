@@ -91,3 +91,6 @@ ENV/
 
 # Logs from running example_application
 profiler_callgraph.json
+
+# Compiled Wheels
+*.whl

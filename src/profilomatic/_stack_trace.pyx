@@ -49,7 +49,7 @@ cpdef generate_stack_trace(frame_, str granularity, bint strip_eliot_frames):
             f_globals = <dict>frame.f_globals
             module_name = f_globals['__name__']
             if not (module_name == 'eliot' or module_name.startswith('eliot.')
-                    or module_name == 'eliot_profiler' or module_name.startswith('eliot_profiler.')):
+                    or module_name == 'profilomatic' or module_name.startswith('profilomatic.')):
                 result.append(instruction)
                 strip_eliot_frames = False
         else:

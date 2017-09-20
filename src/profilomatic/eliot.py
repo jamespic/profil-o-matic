@@ -1,4 +1,5 @@
-from eliot import Action
+from __future__ import absolute_import
+from eliot import Action, add_destination, remove_destination
 from . import _instance
 from .profiler import \
     ACTION_TYPE_FIELD, \
@@ -26,8 +27,10 @@ def _modified_serialize_task_id(self):
 def patch():
     Action.serialize_task_id = _modified_serialize_task_id
     Action.serializeTaskId = _modified_serialize_task_id
+    add_destination(_instance.handle_message)
 
 
 def unpatch():
+    remove_destination(_instance.handle_message)
     Action.serialize_task_id = _original_serialize_task_id
     Action.serializeTaskId = _original_serialize_task_id

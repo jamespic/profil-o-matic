@@ -1,5 +1,5 @@
 try:
-    from eliot_profiler.fast_monotonic import monotonic
+    from profilomatic.fast_monotonic import monotonic
     from unittest import TestCase
     from time import sleep
 
