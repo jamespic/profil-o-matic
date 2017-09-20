@@ -12,8 +12,7 @@ def enable_prometheus():
         GaugeMetricFamily, \
         Summary, \
         REGISTRY
-    from eliot import add_destination
-    from . import _instance, add_destination
+    from . import _instance
 
     class ProfilerCollector(object):
         def collect(self):

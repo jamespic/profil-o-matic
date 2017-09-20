@@ -45,7 +45,7 @@ def mock_current_frames():
     }
 
 
-class EliotProfilerTest(unittest.TestCase):
+class ProfilomaticTest(unittest.TestCase):
     maxDiff = None
     def test_max_actions_per_run(self):
         instance = Profiler(simultaneous_tasks_profiled=2)

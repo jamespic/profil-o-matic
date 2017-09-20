@@ -35,7 +35,7 @@ parser.add_argument(
     help='A TCP address where profiler output should be sent')
 parser.add_argument(
     '-n', '--tasks-profiled', type=int, default=10,
-    help='The number of concurrent Eliot tasks that the profiler should aim to profile at once'
+    help='The number of concurrent tasks that the profiler should aim to profile at once'
 )
 parser.add_argument(
     '-v', '--max-overhead', type=percentage, default=0.02,

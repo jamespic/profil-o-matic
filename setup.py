@@ -45,12 +45,12 @@ class sdist(_sdist):
 
 setup(
     name='Profil-o-matic',
-    version='0.2',
+    version='0.2.0',
     description='A hybrid profiler / mini APM tool, that measures line-level performance of your business-domain actions',
     author='James Pickering',
     author_email='james_pic@hotmail.com',
     license='MIT',
-    url='https://github.com/jamespic/eliot-profiler',
+    url='https://github.com/jamespic/profil-o-matic',
     packages=find_packages('src'),
     package_dir={'':'src'},
     ext_modules=extensions,
